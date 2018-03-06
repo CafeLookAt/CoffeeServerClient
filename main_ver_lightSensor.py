@@ -18,10 +18,13 @@ print("finish sensors setup.")
 # ####initialize variables####
 # input Value for event trigger
 inputVal = 0
-# statusFlag. default false
+# statusFlag. default True
 isAvailable = True
-# waitTime to enable event trigger
+# cool time to trigger next  event
 intervalTime = 5
+# opearnd. When light strength is lower than this value, door is closed.
+threshold_lightStrength = 100
+
 #--------------------------------------------------
 # #### login to salesforce ####
 print("call logging function")
@@ -31,6 +34,10 @@ sf = login()
 print("#### Complete Lanching sensor program ####")
 
 #--------------------------------------------------
+# #### insert a record to initialize server status...
+sf.CoffeeServerStatus__e.create({ 'DeviceName__c':'Sensor0001', 'isAvailable__c':isAvailable}) 
+
+--------------------------------------------
 print("start observation...")
 
 while True:
@@ -40,14 +47,14 @@ while True:
 
         # update input value
         inputVal = grovepi.analogRead(light_sensor)
-        print("brightness is " + str(inputVal))    
+        # print("brightness is " + str(inputVal))    
+        
         # when 
         # 1. door closed and isAvailable OR
         # 2. door opened and isNotAvailable
-        # still wait until status chanegd
-        if (inputVal < 100 and isAvailable) or (inputVal > 100 and not(isAvailable)):
+        # then wait until status changed
+        if (inputVal < threshold_lightStrength and isAvailable) or (inputVal > threshold_lightStrength and not(isAvailable)):
             continue
-
         
         # switching statusFlag
         print("!!!Status Changed!!!")
@@ -59,7 +66,6 @@ while True:
         print("---- Please wait " + str(intervalTime) + "sec...----")
         time.sleep(intervalTime)
         print("!!!Ready!!!")
-    
         
     except KeyboardInterrupt:
         print("...stop observation.")
