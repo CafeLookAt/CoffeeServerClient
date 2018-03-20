@@ -9,6 +9,7 @@ import traceback
 #-------------------------------------------------
 # Declare static variable
 LOG_DATETIME_FORMAT = "%Y%m%d_%H%M%S"
+SIMPLE_SFDC_DICT_SUCCESS = "success"
 
 print("##### Lanch sensor program.... ####")
 
@@ -20,8 +21,8 @@ light_sensor = 0
 pinMode(light_sensor,"INPUT")
 
 # Connect the Grove LED(R,G,B) to Digital port D2,D3,D4
-led_red = 2
-led_blue = 3
+led_red = 7
+led_blue = 8
 pinMode(led_red, "OUTPUT")
 pinMode(led_blue, "OUTPUT")
 
@@ -39,19 +40,19 @@ isAvailable = True
 # cool time to trigger next  event
 intervalTime = 5
 # opearnd. When light strength is lower than this value, door is closed.
-threshold_lightStrength = 100
+threshold_lightStrength = 50
 
 #--------------------------------------------------
 # #### login to salesforce ####
 print("call logging function")
-#sf = login()
+sf = login()
 #--------------------------------------------------
 
 print("#### Complete Lanching sensor program ####")
 
 #--------------------------------------------------
 # #### insert a record to initialize server status...
-#sf.CoffeeServerStatus__e.create({ 'DeviceName__c':'Sensor0001', 'isAvailable__c':isAvailable}) 
+sf.CoffeeServerStatus__e.create({ 'DeviceName__c':'Sensor0001', 'isAvailable__c':isAvailable}) 
 
 #--------------------------------------------
 # light led_blue and off led_green to show starting observation
@@ -68,7 +69,7 @@ while True:
 
         # update input value
         inputVal = analogRead(light_sensor)
-        # print("brightness is " + str(inputVal))    
+        print("brightness is " + str(inputVal))    
         
         # when 
         # 1. door closed and isAvailable OR
@@ -80,8 +81,24 @@ while True:
         # switching statusFlag
         print("!!!Status Changed!!!")
         print("    Updating caffeeServer status...")
+        
         isAvailable = not(isAvailable)
-        sf.CoffeeServerStatus__e.create({ 'DeviceName__c':'Sensor0001', 'isAvailable__c':isAvailable}) #insert
+        
+        # try request upto 3 times unless succeed
+        tryCount = 1
+        while tryCount < 4:
+            requestResult = sf.CoffeeServerStatus__e.create({ 'DeviceName__c':'Sensor0001', 'isAvailable__c':isAvailable}) #insert
+            if requestResult[SIMPLE_SFDC_DICT_SUCCESS]:
+                break
+            else:
+                print("    updating failed " + str(tryCount) + " time(s). retring...")
+                tryCount+=1
+            
+            if tryCount > 3:
+                print("    Leached Re-Request limit. Raise Exception")
+                raise Exception("leached Re-Request limit. Last failed request result is -> " + str(requestResult))    
+        
+
         print("    ....Complete updating.")
  
         print("---- Please wait " + str(intervalTime) + "sec...----")
@@ -94,9 +111,6 @@ while True:
             time.sleep(0.5)
             digitalWrite(led_blue, 0)
             totalWaitTime+=1
-
-
-        #time.sleep(intervalTime)
         
         digitalWrite(led_blue, 1)
         print("!!!Ready!!!")
@@ -114,6 +128,6 @@ while True:
 
         # light led_red to show ERROR
         digitalWrite(led_red, 1)
-        digitalWrite(led_blue, 0)
+        digitalWrite(led_blue, 1)
 
         break

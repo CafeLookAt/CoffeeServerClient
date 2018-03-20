@@ -1,0 +1,13 @@
+[Unit]
+Description=The Light Sensor Service
+After=network.target remote-fs.target nss-lookup.target
+
+[Service]
+ExecStart=/home/pi/1_workspace/CoffeeServerClient/service/excuteLightSensorService.sh
+Type=oneshot
+RemainAfterExit=yes
+User=pi
+WorkingDirectory=/home/pi/1_workspace/CoffeeServerClient/service
+
+[Install]
+WantedBy=multi-user.target
