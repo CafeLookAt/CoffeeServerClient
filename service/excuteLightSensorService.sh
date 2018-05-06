@@ -1,5 +1,15 @@
 #!/bin/sh
 
-python3.5 /home/pi/1_workspace/CoffeeServerClient/main_ver_lightSensor.py >> Output.log
+while :
+
+do
+	sudo python /home/pi/1_softwares/CoffeeServerClient/main.py >> Output.log
+	statsuCode=$?
+
+	if [ $statusCode = 0 ]; then
+		break
+	fi
+
+done
 
 #exit 0
